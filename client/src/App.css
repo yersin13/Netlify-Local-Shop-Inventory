@@ -1,0 +1,137 @@
+/* Set the full page background and center the content */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #28627a; /* soft gray background */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* Main app box */
+.container {
+  margin-top: 3rem;
+  width: 100%;
+  max-width: 600px;
+  background-color: #2c3e50; /* deep blue-gray */
+  color: #ecf0f1;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Title */
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #ffffff;
+}
+
+/* Product list */
+ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+li {
+  background-color: #34495e;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+}
+
+/* Buttons next to product */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  background-color: #232231;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.text-box {
+  flex: 1;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button-group button {
+  background-color: #7f8c8d;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+
+/* Individual buttons */
+.action-buttons button {
+  background-color: #597b7e;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+
+.action-buttons button:hover {
+  background-color: #95a5a6;
+}
+
+/* Form styling */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+input {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #555b65;
+  color: #fff;
+}
+
+input::placeholder {
+  color: #ccc;
+}
+
+/* Submit button */
+button[type="submit"] {
+  background-color: #3498db;
+  color: white;
+  font-size: 1rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover {
+  background-color: #2980b9;
+}
