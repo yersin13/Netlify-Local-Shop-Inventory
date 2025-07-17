@@ -45,7 +45,7 @@ function App() {
   }, []);
 
   const fetchProducts = async () => {
-    const res = await fetch('http://localhost:3001/products');
+    const res = await fetch('/.netlify/functions/getProducts');
     const data = await res.json();
     setProducts(data);
   };
@@ -75,7 +75,7 @@ function App() {
       category: capitalize(category),
     };
 
-    const res = await fetch(`http://localhost:3001/products/${editingProduct.id}`, {
+    const res = await fetch(`/.netlify/functions/updateProduct?id=${editingProduct.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedProduct),
@@ -97,7 +97,7 @@ function App() {
       category: capitalize(category),
     };
 
-    const res = await fetch('http://localhost:3001/products', {
+    const res = await fetch('/.netlify/functions/addProduct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newProduct),
@@ -113,7 +113,7 @@ function App() {
     const confirmDelete = window.confirm('Are you sure you want to delete this product?');
     if (!confirmDelete) return;
 
-    const res = await fetch(`http://localhost:3001/products/${id}`, {
+    const res = await fetch(`/.netlify/functions/deleteProduct?id=${id}`, {
       method: 'DELETE',
     });
 
