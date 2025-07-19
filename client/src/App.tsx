@@ -26,9 +26,19 @@ function App() {
 
   // Initialize SQL.js and in-memory DB
   useEffect(() => {
-    const initDb = async () => {
-      const SQL = await initSqlJs({ locateFile: file => `https://sql.js.org/dist/${file}` });
-      const db = new SQL.Database();
+  const initDb = async () => {
+    const SQL = await initSqlJs({ locateFile: file => `https://sql.js.org/dist/${file}` });
+
+    let db;
+
+    // Try to load saved DB
+    const saved = localStorage.getItem('mydb');
+    if (saved) {
+      const uIntArray = new Uint8Array(JSON.parse(saved));
+      db = new SQL.Database(uIntArray);
+    } else {
+      // First-time load
+      db = new SQL.Database();
       db.run(`
         CREATE TABLE IF NOT EXISTS products (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,19 +48,28 @@ function App() {
           category TEXT
         );
       `);
-      // Add demo data
       db.run(`INSERT INTO products (name, quantity, price, category) VALUES
         ('Bananas', 5, 1.2, 'Fruit'),
         ('Bread', 3, 2.5, 'Bakery'),
         ('Milk', 2, 1.8, 'Dairy');
       `);
-      setDb(db);
-      loadProducts(db);
-    };
-    initDb();
-  }, []);
+    }
 
-const loadProducts = (db: Database, suppressSQL = false) => {
+    setDb(db);
+    loadProducts(db);
+  };
+
+  initDb();
+}, []);
+
+
+const saveDbToLocalStorage = (db: Database) => {
+  const binaryArray = db.export();
+  localStorage.setItem('mydb', JSON.stringify(Array.from(binaryArray)));
+};
+
+
+const loadProducts = (db: Database, suppressSQL: boolean = false) => {
   const sql = "SELECT * FROM products;";
   const result = db.exec(sql);
 
@@ -69,6 +88,7 @@ const loadProducts = (db: Database, suppressSQL = false) => {
     setProducts([]);
   }
 };
+
 
   const capitalize = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -106,8 +126,10 @@ const handleSubmit = (e: React.FormEvent) => {
     );
   }
 
+  saveDbToLocalStorage(db); // ✅ Save AFTER the DB change
+
   resetForm();
-  loadProducts(db, true); // ✅ Prevents overwrite of setLastSQL
+  loadProducts(db, true);
 };
 
 
@@ -122,7 +144,9 @@ const handleDelete = (id: number) => {
 
   setLastSQL(`DELETE FROM products WHERE id = ${id};`);
 
-  loadProducts(db, true); // ✅ suppress SELECT from overwriting
+  saveDbToLocalStorage(db); // ✅ Save AFTER the DELETE
+
+  loadProducts(db, true);
 };
 
 
@@ -237,6 +261,18 @@ const handleDelete = (id: number) => {
           {editingProduct ? 'Update Product' : 'Add Product'}
         </button>
       </form>
+      <button
+  style={{ marginTop: '1rem', backgroundColor: '#f44336', color: '#fff' }}
+  onClick={() => {
+    if (db && confirm("Reset all data?")) {
+      db.run(`DROP TABLE IF EXISTS products;`);
+      localStorage.removeItem('mydb');
+      location.reload();
+    }
+  }}
+>
+  🔁 Reset Database
+</button>
 
 
     </div>
