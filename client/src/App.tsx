@@ -22,6 +22,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [lastSQL, setLastSQL] = useState('');
 
   // Initialize SQL.js and in-memory DB
   useEffect(() => {
@@ -49,19 +50,25 @@ function App() {
     initDb();
   }, []);
 
-  const loadProducts = (db: Database) => {
-    const result = db.exec("SELECT * FROM products;");
-    if (result.length > 0) {
-      const values = result[0].values as (string | number)[][];
-      const items = values.map(
-        ([id, name, quantity, price, category]) =>
-          ({ id, name, quantity, price, category } as Product)
-      );
-      setProducts(items);
-    } else {
-      setProducts([]);
-    }
-  };
+const loadProducts = (db: Database, suppressSQL = false) => {
+  const sql = "SELECT * FROM products;";
+  const result = db.exec(sql);
+
+  if (!suppressSQL) {
+    setLastSQL(sql);
+  }
+
+  if (result.length > 0) {
+    const values = result[0].values as (string | number)[][];
+    const items = values.map(
+      ([id, name, quantity, price, category]) =>
+        ({ id, name, quantity, price, category } as Product)
+    );
+    setProducts(items);
+  } else {
+    setProducts([]);
+  }
+};
 
   const capitalize = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -74,40 +81,52 @@ function App() {
     setCategory('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!db) return;
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!db) return;
 
-    const product = {
-      name: capitalize(name),
-      quantity: parseInt(quantity),
-      price: parseFloat(price),
-      category: capitalize(category),
-    };
-
-    if (editingProduct) {
-      db.run(
-        `UPDATE products SET name = ?, quantity = ?, price = ?, category = ? WHERE id = ?;`,
-        [product.name, product.quantity, product.price, product.category, editingProduct.id]
-      );
-    } else {
-      db.run(
-        `INSERT INTO products (name, quantity, price, category) VALUES (?, ?, ?, ?);`,
-        [product.name, product.quantity, product.price, product.category]
-      );
-    }
-
-    loadProducts(db);
-    resetForm();
+  const product = {
+    name: capitalize(name),
+    quantity: parseInt(quantity),
+    price: parseFloat(price),
+    category: capitalize(category),
   };
 
-  const handleDelete = (id: number) => {
-    if (!db) return;
-    const confirmDelete = window.confirm('Are you sure you want to delete this product?');
-    if (!confirmDelete) return;
-    db.run(`DELETE FROM products WHERE id = ?;`, [id]);
-    loadProducts(db);
-  };
+  if (editingProduct) {
+    const sql = `UPDATE products SET name = ?, quantity = ?, price = ?, category = ? WHERE id = ?;`;
+    db.run(sql, [product.name, product.quantity, product.price, product.category, editingProduct.id]);
+    setLastSQL(
+      `UPDATE products SET name = '${product.name}', quantity = ${product.quantity}, price = ${product.price}, category = '${product.category}' WHERE id = ${editingProduct.id};`
+    );
+  } else {
+    const sql = `INSERT INTO products (name, quantity, price, category) VALUES (?, ?, ?, ?);`;
+    db.run(sql, [product.name, product.quantity, product.price, product.category]);
+    setLastSQL(
+      `INSERT INTO products (name, quantity, price, category) VALUES ('${product.name}', ${product.quantity}, ${product.price}, '${product.category}');`
+    );
+  }
+
+  resetForm();
+  loadProducts(db, true); // ✅ Prevents overwrite of setLastSQL
+};
+
+
+const handleDelete = (id: number) => {
+  if (!db) return;
+
+  const confirmDelete = window.confirm('Are you sure you want to delete this product?');
+  if (!confirmDelete) return;
+
+  const sql = `DELETE FROM products WHERE id = ?;`;
+  db.run(sql, [id]);
+
+  setLastSQL(`DELETE FROM products WHERE id = ${id};`);
+
+  loadProducts(db, true); // ✅ suppress SELECT from overwriting
+};
+
+
+
 
   const uniqueCategories = Array.from(new Set(products.map((p) => p.category)));
 
@@ -158,6 +177,33 @@ function App() {
       </ul>
 
       <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+
+{lastSQL && (
+  <div
+    style={{
+      marginTop: '2rem',
+      padding: '1rem',
+      backgroundColor: '#111',          // dark background
+      fontFamily: 'monospace',
+      borderRadius: '8px',
+      border: '1px solid #333',
+      color: '#fff',                    // white text
+      fontSize: '0.9rem',
+      whiteSpace: 'pre-wrap',
+      wordBreak: 'break-word',
+      width: '100%',
+      boxSizing: 'border-box',
+    }}
+  >
+    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
+      🛠 SQL Executed:
+    </strong>
+    {lastSQL}
+  </div>
+)}
+
+<br />
+
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -191,6 +237,8 @@ function App() {
           {editingProduct ? 'Update Product' : 'Add Product'}
         </button>
       </form>
+
+
     </div>
   );
 }
