@@ -1,9 +1,9 @@
-// App.tsx - Local Shop Inventory System
+// App.tsx - Local Shop Inventory (static + sql.js version)
 
 import { useEffect, useState } from 'react';
+import initSqlJs, { Database } from 'sql.js';
 import './App.css';
 
-// Type definition for a product
 interface Product {
   id: number;
   name: string;
@@ -13,135 +13,108 @@ interface Product {
 }
 
 function App() {
-  // Local state for product form fields
+  const [db, setDb] = useState<Database | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
-
-  // State for searching/filtering
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // Load saved form values from localStorage on mount
+  // Initialize SQL.js and in-memory DB
   useEffect(() => {
-    const savedName = localStorage.getItem('name');
-    const savedQuantity = localStorage.getItem('quantity');
-    const savedPrice = localStorage.getItem('price');
-    const savedCategory = localStorage.getItem('category');
-
-    if (savedName) setName(savedName);
-    if (savedQuantity) setQuantity(savedQuantity);
-    if (savedPrice) setPrice(savedPrice);
-    if (savedCategory) setCategory(savedCategory);
+    const initDb = async () => {
+      const SQL = await initSqlJs({ locateFile: file => `https://sql.js.org/dist/${file}` });
+      const db = new SQL.Database();
+      db.run(`
+        CREATE TABLE IF NOT EXISTS products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          quantity INTEGER,
+          price REAL,
+          category TEXT
+        );
+      `);
+      // Add demo data
+      db.run(`INSERT INTO products (name, quantity, price, category) VALUES
+        ('Bananas', 5, 1.2, 'Fruit'),
+        ('Bread', 3, 2.5, 'Bakery'),
+        ('Milk', 2, 1.8, 'Dairy');
+      `);
+      setDb(db);
+      loadProducts(db);
+    };
+    initDb();
   }, []);
 
-  // Load product list from server on mount
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    const res = await fetch('/.netlify/functions/getProducts');
-    const data = await res.json();
-    setProducts(data);
-  };
-
-  // Autofill form when editing
-  useEffect(() => {
-    if (editingProduct) {
-      setName(editingProduct.name);
-      setQuantity(editingProduct.quantity.toString());
-      setPrice(editingProduct.price.toString());
-      setCategory(editingProduct.category);
-    }
-  }, [editingProduct]);
-
-  const startEditing = (product: Product) => {
-    setEditingProduct(product);
-  };
-
-  const handleUpdateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-
-    const updatedProduct = {
-      name: capitalize(name),
-      quantity: parseInt(quantity),
-      price: parseFloat(price),
-      category: capitalize(category),
-    };
-
-    const res = await fetch(`/.netlify/functions/updateProduct?id=${editingProduct.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedProduct),
-    });
-
-    if (res.ok) {
-      resetForm();
-      fetchProducts();
+  const loadProducts = (db: Database) => {
+    const result = db.exec("SELECT * FROM products;");
+    if (result.length > 0) {
+      const values = result[0].values as (string | number)[][];
+      const items = values.map(
+        ([id, name, quantity, price, category]) =>
+          ({ id, name, quantity, price, category } as Product)
+      );
+      setProducts(items);
+    } else {
+      setProducts([]);
     }
   };
 
-  const handleAddProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
-    const newProduct = {
-      name: capitalize(name),
-      quantity: parseInt(quantity),
-      price: parseFloat(price),
-      category: capitalize(category),
-    };
-
-    const res = await fetch('/.netlify/functions/addProduct', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newProduct),
-    });
-
-    if (res.ok) {
-      resetForm();
-      fetchProducts();
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this product?');
-    if (!confirmDelete) return;
-
-    const res = await fetch(`/.netlify/functions/deleteProduct?id=${id}`, {
-      method: 'DELETE',
-    });
-
-    if (res.ok) fetchProducts();
-  };
-
-  // Reset form fields and localStorage
   const resetForm = () => {
     setEditingProduct(null);
     setName('');
     setQuantity('');
     setPrice('');
     setCategory('');
-    localStorage.clear();
   };
 
-  // Helper function to capitalize input
-  const capitalize = (str: string) =>
-    str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db) return;
 
-  // Unique category list for the filter dropdown
+    const product = {
+      name: capitalize(name),
+      quantity: parseInt(quantity),
+      price: parseFloat(price),
+      category: capitalize(category),
+    };
+
+    if (editingProduct) {
+      db.run(
+        `UPDATE products SET name = ?, quantity = ?, price = ?, category = ? WHERE id = ?;`,
+        [product.name, product.quantity, product.price, product.category, editingProduct.id]
+      );
+    } else {
+      db.run(
+        `INSERT INTO products (name, quantity, price, category) VALUES (?, ?, ?, ?);`,
+        [product.name, product.quantity, product.price, product.category]
+      );
+    }
+
+    loadProducts(db);
+    resetForm();
+  };
+
+  const handleDelete = (id: number) => {
+    if (!db) return;
+    const confirmDelete = window.confirm('Are you sure you want to delete this product?');
+    if (!confirmDelete) return;
+    db.run(`DELETE FROM products WHERE id = ?;`, [id]);
+    loadProducts(db);
+  };
+
   const uniqueCategories = Array.from(new Set(products.map((p) => p.category)));
 
   return (
     <div className="container" style={{ padding: '1rem' }}>
-      <h1>🛍️ Local Shop Inventory</h1>
+      <h1>🛍️ Local Shop Inventory (Static Demo)</h1>
 
-      {/* Search and filter */}
       <input
         type="text"
         placeholder="Search product..."
@@ -163,12 +136,13 @@ function App() {
         ))}
       </select>
 
-      {/* Product list */}
       <ul>
         {products
           .filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-          .filter((p) =>
-            categoryFilter === '' || p.category.toLowerCase() === categoryFilter.toLowerCase()
+          .filter(
+            (p) =>
+              categoryFilter === '' ||
+              p.category.toLowerCase() === categoryFilter.toLowerCase()
           )
           .map((p) => (
             <li key={p.id} className="action-buttons">
@@ -177,53 +151,40 @@ function App() {
               </div>
               <div className="button-group">
                 <button onClick={() => handleDelete(p.id)}>❌ Delete</button>
-                <button onClick={() => startEditing(p)}>✏️ Edit</button>
+                <button onClick={() => setEditingProduct(p)}>✏️ Edit</button>
               </div>
             </li>
           ))}
       </ul>
 
-      {/* Form to add or update a product */}
       <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-      <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}>
+      <form onSubmit={handleSubmit}>
         <input
           type="text"
           placeholder="Name"
           value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            localStorage.setItem('name', e.target.value);
-          }}
+          onChange={(e) => setName(e.target.value)}
           required
         />
         <input
           type="number"
           placeholder="Quantity"
           value={quantity}
-          onChange={(e) => {
-            setQuantity(e.target.value);
-            localStorage.setItem('quantity', e.target.value);
-          }}
+          onChange={(e) => setQuantity(e.target.value)}
           required
         />
         <input
           type="number"
           placeholder="Price"
           value={price}
-          onChange={(e) => {
-            setPrice(e.target.value);
-            localStorage.setItem('price', e.target.value);
-          }}
+          onChange={(e) => setPrice(e.target.value)}
           required
         />
         <input
           type="text"
           placeholder="Category"
           value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-            localStorage.setItem('category', e.target.value);
-          }}
+          onChange={(e) => setCategory(e.target.value)}
           required
         />
         <button type="submit">
