@@ -6,8 +6,14 @@ body {
   padding: 0;
   display: flex;
   justify-content: center;
+    overflow-x: hidden;
   align-items: flex-start;
   min-height: 100vh;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Main app box */
@@ -53,17 +59,19 @@ li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  flex-wrap: nowrap; /* ❗ prevent wrapping on desktop */
   background-color: #232231;
   padding: 0.75rem 1rem;
   border-radius: 8px;
+  gap: 1rem;
 }
 
 .text-box {
-  flex: 1;
+  flex: 1 1 auto;
   text-align: left;
   font-size: 1rem;
   font-weight: 500;
+  word-break: break-word;
 }
 
 .button-group {
@@ -84,18 +92,16 @@ li {
 
 
 /* Individual buttons */
-.action-buttons button {
-  background-color: #597b7e;
-  border: none;
-  padding: 0.5rem 0.75rem;
-  color: white;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  margin-left: 0.5rem;
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 0.5rem;
+  background-color: #232231;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  flex-wrap: wrap; /* ✅ Enable wrapping */
 }
-
 
 .action-buttons button:hover {
   background-color: #95a5a6;
@@ -135,3 +141,191 @@ button[type="submit"] {
 button[type="submit"]:hover {
   background-color: #2980b9;
 }
+
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.filter-input,
+.filter-select,
+.reset-button {
+  height: 2.5rem;
+  line-height: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #444444;
+  color: #fff;
+  font-size: 1rem;
+}
+
+/* Select wrapper for positioning */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+   display: flex;
+  align-items: center;
+  min-height: 2.5rem;      
+}
+
+/* Shared select styling */
+select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;         /* ⬅️ slightly less vertical padding */
+  font-size: 1rem;
+  line-height: 1.5rem;              /* ⬅️ key fix to stop cropping */
+  border-radius: 6px;
+  border: none;
+  background-color: #555b65;
+  color: #fff;
+  appearance: none;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  vertical-align: middle;
+}
+
+select::-ms-expand {
+  display: none; /* Removes default arrow on IE */
+}
+/* Remove weird focus issues */
+select:focus {
+  outline: none;
+  border: 2px solid #00baff;
+}
+
+/* Optional: force dropdown list to match select box */
+select option {
+  background-color: #333;
+  color: #fff;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;     /* Balanced vertical padding */
+  font-size: 1rem;
+  line-height: 1.4;             /* Prevents cropping */
+  height: auto;                 /* Let content define height */
+  border-radius: 6px;
+  border: 1px solid #00aaff;
+  background-color: #555b65;
+  color: #fff;
+  appearance: none;
+  box-sizing: border-box;
+  vertical-align: middle;       /* Aligns text inside */
+}
+
+
+.filter-select:focus {
+  outline: none;
+  border-color: #00ccff;
+}
+.reset-button {
+  cursor: pointer;
+  background-color: #007bff; /* Blue */
+  border: 1px solid #00aaff;
+
+  color: white; /* White text */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  width: auto;
+}
+
+.reset-button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* ============================
+   Responsive Design
+   ============================ */
+
+@media (max-width: 600px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-input,
+  .filter-select,
+  .reset-button {
+    width: 100%;
+    font-size: 1rem;
+  }
+
+  form input,
+  form button {
+    font-size: 1rem;
+  }
+
+  .container {
+    padding: 1rem;
+    margin: 1rem;
+      width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+.action-buttons {
+ flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+
+  .button-group {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    flex: 1 1 48%;
+  min-width: 120px;
+  }
+
+  .button-group button {
+    flex: 1 1 48%;
+    margin-bottom: 0.5rem;
+  }
+
+  .text-box {
+    width: 100%;
+  }
+
+  .reset-button {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem 0.5rem;
+    margin: 0;
+  }
+}
+.sql-box {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
