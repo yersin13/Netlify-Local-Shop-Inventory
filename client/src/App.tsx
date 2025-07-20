@@ -264,6 +264,53 @@ INSERT INTO products (name, quantity, price, category) VALUES
       ) : (
         <div className="container" style={{ padding: '1rem' }}>
           <h1>🛍️ Local Shop Inventory (Static Demo)</h1>
+          
+          {(lastSQL || selectedCategory || searchTerm) && (
+            <div className="sql-box"
+              style={{
+                marginTop: '2rem',
+                padding: '1rem',
+                backgroundColor: '#111',
+                fontFamily: 'monospace',
+                borderRadius: '8px',
+                border: '1px solid #333',
+                color: '#fff',
+                fontSize: '0.9rem',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              {/* Always show SQL command if any (INSERT, DELETE, etc.) */}
+              {lastSQL && (
+                <>
+                  <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
+                    🛠 Last CRUD SQL Executed:
+                  </strong>
+                  {lastSQL}
+                  <br />
+                  <br />
+                </>
+              )}
+
+              {/* Always show filtered SQL if filters are active */}
+              {(selectedCategory || searchTerm) && (
+                <>
+                  <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
+                    🧩 Only Filtered and sorted SQL:
+                  </strong>
+                  {`SELECT * FROM products` +
+                    (selectedCategory ? ` WHERE category = '${capitalize(selectedCategory)}'` : '') +
+                    (searchTerm
+                      ? `${selectedCategory ? ' AND' : ' WHERE'} name LIKE '%${searchTerm}%'`
+                      : '') +
+                    ';'}
+                </>
+              )}
+            </div>
+          )}
+<br />
           <div className="filter-bar">
             <input
               type="text"
@@ -347,52 +394,6 @@ INSERT INTO products (name, quantity, price, category) VALUES
             {editingProduct ? '✏️ Editing Product' : '➕ Add New Product'}
           </h2>
 
-
-          {(lastSQL || selectedCategory || searchTerm) && (
-            <div className="sql-box"
-              style={{
-                marginTop: '2rem',
-                padding: '1rem',
-                backgroundColor: '#111',
-                fontFamily: 'monospace',
-                borderRadius: '8px',
-                border: '1px solid #333',
-                color: '#fff',
-                fontSize: '0.9rem',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                width: '100%',
-                boxSizing: 'border-box',
-              }}
-            >
-              {/* Always show SQL command if any (INSERT, DELETE, etc.) */}
-              {lastSQL && (
-                <>
-                  <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
-                    🛠 Last CRUD SQL Executed:
-                  </strong>
-                  {lastSQL}
-                  <br />
-                  <br />
-                </>
-              )}
-
-              {/* Always show filtered SQL if filters are active */}
-              {(selectedCategory || searchTerm) && (
-                <>
-                  <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
-                    🧩 Only Filtered and sorted SQL:
-                  </strong>
-                  {`SELECT * FROM products` +
-                    (selectedCategory ? ` WHERE category = '${capitalize(selectedCategory)}'` : '') +
-                    (searchTerm
-                      ? `${selectedCategory ? ' AND' : ' WHERE'} name LIKE '%${searchTerm}%'`
-                      : '') +
-                    ';'}
-                </>
-              )}
-            </div>
-          )}
 
 
 
