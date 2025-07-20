@@ -13,6 +13,7 @@ interface Product {
 }
 
 function App() {
+  const [started, setStarted] = useState(false);
   const [db, setDb] = useState<Database | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [name, setName] = useState('');
@@ -36,42 +37,90 @@ const filteredProducts = products
   );
 
   // Initialize SQL.js and in-memory DB
-  useEffect(() => {
-  const initDb = async () => {
-    const SQL = await initSqlJs({ locateFile: file => `https://sql.js.org/dist/${file}` });
+//   useEffect(() => {
+//   const initDb = async () => {
+//     const SQL = await initSqlJs({ locateFile: file => `https://sql.js.org/dist/${file}` });
 
-    let db;
+//     let db;
 
-    // Try to load saved DB
-    const saved = localStorage.getItem('mydb');
-    if (saved) {
-      const uIntArray = new Uint8Array(JSON.parse(saved));
-      db = new SQL.Database(uIntArray);
-    } else {
-      // First-time load
-      db = new SQL.Database();
-      db.run(`
-        CREATE TABLE IF NOT EXISTS products (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
-          quantity INTEGER,
-          price REAL,
-          category TEXT
-        );
-      `);
-      db.run(`INSERT INTO products (name, quantity, price, category) VALUES
-        ('Bananas', 5, 1.2, 'Fruit'),
-        ('Bread', 3, 2.5, 'Bakery'),
-        ('Milk', 2, 1.8, 'Dairy');
-      `);
-    }
+//     // Try to load saved DB
+//     const saved = localStorage.getItem('mydb');
+//     if (saved) {
+//       const uIntArray = new Uint8Array(JSON.parse(saved));
+//       db = new SQL.Database(uIntArray);
+//     } else {
+//    db = new SQL.Database();
 
-    setDb(db);
-    loadProducts(db);
-  };
+// const createSQL = `
+// CREATE TABLE IF NOT EXISTS products (
+//   id INTEGER PRIMARY KEY AUTOINCREMENT,
+//   name TEXT,
+//   quantity INTEGER,
+//   price REAL,
+//   category TEXT
+// );`;
 
-  initDb();
+// const insertSQL = `
+// INSERT INTO products (name, quantity, price, category) VALUES
+//   ('Bananas', 5, 1.2, 'Fruit'),
+//   ('Bread', 3, 2.5, 'Bakery'),
+//   ('Milk', 2, 1.8, 'Dairy');`;
+
+// db.run(createSQL);
+// db.run(insertSQL);
+
+// // ✅ Show in SQL Executed Box
+// setLastSQL(createSQL + '\n' + insertSQL);
+
+
+//     }
+
+//     setDb(db);
+//     loadProducts(db);
+//   };
+
+//   initDb();
+// }, []);
+
+useEffect(() => {
+  const alreadyStarted = localStorage.getItem('demoStarted') === 'true';
+  if (alreadyStarted) {
+    setStarted(true);
+    initializeDemo();
+  }
 }, []);
+
+const initializeDemo = async () => {
+  const SQL = await initSqlJs({ locateFile: file => `https://sql.js.org/dist/${file}` });
+  let db = new SQL.Database();
+
+  const createSQL = `
+CREATE TABLE IF NOT EXISTS products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  quantity INTEGER,
+  price REAL,
+  category TEXT
+);`;
+
+  const insertSQL = `
+INSERT INTO products (name, quantity, price, category) VALUES
+   ('Bananas', 5, 1.2, 'Fruit'),
+  ('Bread', 3, 2.5, 'Bakery'),
+  ('Milk', 2, 1.8, 'Dairy'),
+  ('Apples', 10, 1.5, 'Fruit'),
+  ('Cheese', 4, 3.2, 'Dairy'),
+  ('Croissant', 6, 2.8, 'Bakery');`;
+
+  db.run(createSQL);
+  db.run(insertSQL);
+
+  setDb(db);
+  loadProducts(db, true);
+  saveDbToLocalStorage(db);
+  setLastSQL(createSQL + '\n' + insertSQL);
+  localStorage.setItem('demoStarted', 'true');
+};
 
 
 const saveDbToLocalStorage = (db: Database) => {
@@ -166,61 +215,75 @@ const handleDelete = (id: number) => {
 
   const uniqueCategories = Array.from(new Set(products.map((p) => p.category)));
 
-  return (
-    <div className="container" style={{ padding: '1rem' }}>
-      <h1>🛍️ Local Shop Inventory (Static Demo)</h1>
+ return (
+  <>
+    {!started ? (
+      <div style={{ textAlign: 'center', marginTop: '5rem' }}>
+        <h2>🛠 Start SQL Inventory Demo</h2>
+        <p>This demo uses an in-memory SQL database. Click below to create the table and insert initial data.</p>
+        <button
+          onClick={() => {
+            setStarted(true);
+            initializeDemo();
+          }}
+          style={{
+            fontSize: '1.2rem',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            backgroundColor: '#3498db',
+            color: 'white',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          ▶️ Start Demo
+        </button>
+      </div>
+    ) : (
+      <div className="container" style={{ padding: '1rem' }}>
+        <h1>🛍️ Local Shop Inventory (Static Demo)</h1>
 
-      <input
-        type="text"
-        placeholder="Search product..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        style={{ marginBottom: '1rem', display: 'block' }}
-      />
+        <input
+          type="text"
+          placeholder="Search product..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ marginBottom: '1rem', display: 'block' }}
+        />
 
-   <select
-  value={selectedCategory}
-  onChange={(e) => setSelectedCategory(e.target.value)}
->
-  <option value="">All Categories</option>
-  {uniqueCategories.map((cat) => (
-    <option key={cat} value={cat}>
-      {capitalize(cat)}
-    </option>
-  ))}
-</select>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+        >
+          <option value="">All Categories</option>
+          {uniqueCategories.map((cat) => (
+            <option key={cat} value={cat}>
+              {capitalize(cat)}
+            </option>
+          ))}
+        </select>
 
-{selectedCategory !== '' && (
-  <p style={{ fontFamily: 'monospace', color: '#00ff90', marginBottom: '1rem' }}>
-    {`SELECT * FROM products WHERE category = '${capitalize(selectedCategory)}';`}
-  </p>
-)}
+        <ul>
+          {filteredProducts.length === 0 ? (
+            <p style={{ color: '#ccc' }}>No products found.</p>
+          ) : (
+            filteredProducts.map((p) => (
+              <li key={p.id} className="action-buttons">
+                <div className="text-box">
+                  {p.name} – {p.quantity} in stock – ${p.price.toFixed(2)} – Category: {p.category}
+                </div>
+                <div className="button-group">
+                  <button onClick={() => handleDelete(p.id)}>❌ Delete</button>
+                  <button onClick={() => setEditingProduct(p)}>✏️ Edit</button>
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
 
-    <ul>
-  {filteredProducts.length === 0 ? (
-  <p style={{ color: '#ccc' }}>No products found.</p>
-) : (
-  <ul>
-    {filteredProducts.map((p) => (
-      <li key={p.id} className="action-buttons">
-        <div className="text-box">
-          {p.name} – {p.quantity} in stock – ${p.price.toFixed(2)} – Category: {p.category}
-        </div>
-        <div className="button-group">
-          <button onClick={() => handleDelete(p.id)}>❌ Delete</button>
-          <button onClick={() => setEditingProduct(p)}>✏️ Edit</button>
-        </div>
-      </li>
-    ))}
-  </ul>
-)}
+        <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
 
-</ul>
-
-
-
-      <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-
+       {/* 🧠 Show SQL only if user interacted */}
 {(lastSQL || selectedCategory || searchTerm) && (
   <div
     style={{
@@ -238,94 +301,94 @@ const handleDelete = (id: number) => {
       boxSizing: 'border-box',
     }}
   >
-    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
-      🛠 SQL Executed:
-    </strong>
-    {lastSQL || '-- No recent SQL command executed --'}
-
-    {(selectedCategory || searchTerm) && (
-      <div>
-        <br />
-          <p
-        style={{
-          fontFamily: 'monospace',
-          color: '#00ff90',
-          marginTop: '1rem',
-          marginBottom: 0,
-        }}
-      >
-          🧩 Filter and Sorting  SQL Executed:     <br /> 
-           </p>
-
-  
+    {lastSQL && !searchTerm && !selectedCategory ? (
+      <>
+        <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
+          🛠 SQL Executed:
+        </strong>
+        {lastSQL}
+      </>
+    ) : (
+      <>
+        <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#00ff90' }}>
+          🧩 Filtered SQL:
+        </strong>
         {`SELECT * FROM products` +
           (selectedCategory ? ` WHERE category = '${capitalize(selectedCategory)}'` : '') +
           (searchTerm
             ? `${selectedCategory ? ' AND' : ' WHERE'} name LIKE '%${searchTerm}%'`
             : '') +
           ';'}
-    
-      </div>
-     
+      </>
     )}
   </div>
 )}
 
 
+        <br />
 
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <input
+            type="number"
+            placeholder="Quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            required
+          />
+          <input
+            type="number"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          />
+          <button type="submit">
+            {editingProduct ? 'Update Product' : 'Add Product'}
+          </button>
+        </form>
 
+        <button
+          style={{ marginTop: '1rem', backgroundColor: '#f44336', color: '#fff' }}
+         onClick={() => {
+  if (confirm("Reset all data?")) {
+    if (!db) return;
 
-<br />
+    db.run(`DROP TABLE IF EXISTS products;`);
+    localStorage.removeItem('mydb');
+    localStorage.removeItem('demoStarted'); // 👈 Reset flag
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
-        />
-        <button type="submit">
-          {editingProduct ? 'Update Product' : 'Add Product'}
+    setStarted(false);
+    setDb(null);
+    setProducts([]);
+    setLastSQL('');
+    resetForm();
+    setSearchTerm('');
+    setSelectedCategory('');
+  }
+}}
+
+        >
+          🔁 Reset Database
         </button>
-      </form>
-      <button
-  style={{ marginTop: '1rem', backgroundColor: '#f44336', color: '#fff' }}
-  onClick={() => {
-    if (db && confirm("Reset all data?")) {
-      db.run(`DROP TABLE IF EXISTS products;`);
-      localStorage.removeItem('mydb');
-      location.reload();
-    }
-  }}
->
-  🔁 Reset Database
-</button>
+      </div>
+    )}
+  </>
+);
 
-
-    </div>
-  );
 }
 
 export default App;
